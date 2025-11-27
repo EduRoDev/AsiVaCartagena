@@ -1,0 +1,201 @@
+---
+export const prerender = false;
+import { supabase } from "../../lib/supabase";
+import Layout from '../../components/layout.astro';
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect("/signin");
+}
+
+const id = Astro.url.searchParams.get('id');
+
+if (!id) {
+  return Astro.redirect("/dashboard");
+}
+
+// Obtener la noticia por ID
+const { data: noticia, error } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    content,
+    image_url,
+    created_at,
+    updated_at,
+    category_id,
+    categories (
+      id,
+      name
+    )
+  `)
+  .eq('id', id)
+  .single();
+
+if (error || !noticia) {
+  return Astro.redirect("/dashboard");
+}
+
+const category = Array.isArray(noticia.categories) 
+  ? noticia.categories[0] 
+  : noticia.categories;
+---
+
+<Layout title={`Ver: ${noticia.title}`} hideNavbar={true}>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/dashboard" class="inline-flex items-center gap-2 text-gray-600 hover:text-amber-600 transition-colors group">
+          <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al Dashboard
+        </a>
+        <div class="flex items-center gap-2">
+          <a 
+            href={`/admin/update?id=${noticia.id}`}
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/25"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Editar
+          </a>
+          <a 
+            href={`/admin/delete?id=${noticia.id}`}
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-red-500/25"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Eliminar
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
+      <article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Image -->
+        {noticia.image_url && (
+          <div class="w-full aspect-video overflow-hidden bg-gray-100">
+            <img 
+              src={noticia.image_url} 
+              alt={noticia.title}
+              class="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        <!-- Content -->
+        <div class="p-6 md:p-8">
+          <!-- Meta Info -->
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            {category && (
+              <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">
+                {category.name}
+              </span>
+            )}
+            <span class="text-sm text-gray-500 flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {new Date(noticia.created_at).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+            {noticia.updated_at && (
+              <span class="text-sm text-gray-500">
+                · Actualizado: {new Date(noticia.updated_at).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: 'short'
+                })}
+              </span>
+            )}
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-3xl font-bold text-gray-900 mb-4">{noticia.title}</h1>
+          
+          <!-- Slug -->
+          <div class="mb-6 p-4 bg-gray-50 rounded-xl flex flex-wrap items-center gap-4">
+            <div>
+              <span class="text-xs font-medium text-gray-500 uppercase block mb-1">URL:</span>
+              <code class="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">/noticia/{noticia.slug}</code>
+            </div>
+            <a 
+              href={`/user/noticia/${noticia.slug}`} 
+              target="_blank"
+              class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Ver en sitio público
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+
+          <!-- Content -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Contenido de la noticia
+            </h3>
+            <div class="text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-6 rounded-xl border border-gray-100">
+              {noticia.content}
+            </div>
+          </div>
+
+          <!-- Technical Info -->
+          <details class="mt-8 pt-6 border-t border-gray-100">
+            <summary class="text-sm font-semibold text-gray-600 cursor-pointer hover:text-amber-600 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Información técnica
+            </summary>
+            <dl class="grid grid-cols-2 gap-4 text-sm mt-4 p-4 bg-gray-50 rounded-xl">
+              <div>
+                <dt class="text-gray-500 text-xs uppercase">ID</dt>
+                <dd class="font-mono text-gray-900 mt-1">{noticia.id}</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500 text-xs uppercase">Category ID</dt>
+                <dd class="font-mono text-gray-900 mt-1">{noticia.category_id}</dd>
+              </div>
+              {noticia.image_url && (
+                <div class="col-span-2">
+                  <dt class="text-gray-500 text-xs uppercase">URL de imagen</dt>
+                  <dd class="font-mono text-xs text-gray-900 break-all mt-1 bg-white p-2 rounded">{noticia.image_url}</dd>
+                </div>
+              )}
+            </dl>
+          </details>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+  </style>
+</Layout>

@@ -1,0 +1,85 @@
+---
+export const prerender = false;
+import Layout from '../../../components/layout.astro';
+import { supabase } from '../../../lib/supabase';
+
+const { slug } = Astro.params;
+
+// Obtener la noticia por slug
+const { data: noticia, error } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    content,
+    image_url,
+    created_at,
+    category_id,
+    categories!inner (
+      id,
+      name
+    )
+  `)
+  .eq('slug', slug)
+  .single();
+
+// Si no se encuentra la noticia, redirigir al inicio
+if (error || !noticia) {
+  return Astro.redirect('index');
+}
+
+const category = Array.isArray(noticia.categories) && noticia.categories.length > 0 
+  ? noticia.categories[0] 
+  : null;
+---
+
+<Layout title={noticia.title}>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Contenido de la noticia -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      <article class="bg-white rounded-lg shadow-sm overflow-hidden">        
+        {noticia.image_url && (
+          <div class="w-full aspect-video overflow-hidden">
+            <img 
+              src={noticia.image_url} 
+              alt={noticia.title}
+              class="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        <!-- Contenido del artículo -->
+        <div class="p-6 md:p-8">
+          <!-- Categoría y fecha -->
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            {category && (
+              <span class="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                {category.name}
+              </span>
+            )}
+            <time datetime={noticia.created_at} class="text-sm text-gray-500">
+              {new Date(noticia.created_at).toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </time>
+          </div>
+
+          <!-- Título -->
+          <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            {noticia.title}
+          </h1>
+
+          <!-- Contenido del artículo -->
+          <div class="prose prose-gray max-w-none">
+            <div class="text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {noticia.content}
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </div>
+</Layout>

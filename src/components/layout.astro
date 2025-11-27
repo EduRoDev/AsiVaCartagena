@@ -1,0 +1,28 @@
+---
+interface Props {
+    title: string;
+    hideNavbar?: boolean;
+}
+
+const { title, hideNavbar = false } = Astro.props;
+import '../styles/global.css';
+import Navbar from './navbar.astro';
+import Footer from './footer.astro'
+---
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/png" href="/images/Logo.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="title" content={title} />
+        <title>{title}</title>
+    </head>
+    <body class="antialiased bg-gray-50 min-h-screen">
+        {!hideNavbar && <Navbar />}
+        <main>
+            <slot />
+        </main>
+        <Footer />
+    </body>
+</html>

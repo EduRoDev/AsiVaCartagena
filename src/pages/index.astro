@@ -1,0 +1,475 @@
+---
+export const prerender = false;
+import Layout from '../components/layout.astro';
+import { supabase } from '../lib/supabase';
+
+const { data: news, error } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    content,
+    image_url,
+    created_at,
+    category_id,
+    categories!inner (
+      id,
+      name
+    )
+  `)
+  .order('created_at', { ascending: false })
+  .limit(3);
+
+const noticias = news ?? [];
+
+// Imágenes de Cartagena para la galería
+const cartagenaImages = [
+  "/images/WhatsApp Image 2025-11-26 at 7.49.49 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.50 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.51 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.52 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.53 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.54 PM.jpeg",
+];
+
+const galleryImages = [
+  "/images/WhatsApp Image 2025-11-26 at 7.49.49 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.50 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.51 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.52 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.53 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.54 PM (1).jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.55 PM.jpeg",
+  "/images/WhatsApp Image 2025-11-26 at 7.49.55 PM (1).jpeg",
+];
+
+const categories = [
+  { name: "Latido Local", href: "/latido-local", icon: "🏛️", description: "Noticias del día a día de nuestra ciudad" },
+  { name: "La Fantástica", href: "/la-fantastica", icon: "🎭", description: "Cultura, arte y entretenimiento cartagenero" },
+  { name: "Mis Raíces", href: "/mis-raices", icon: "🌴", description: "Historia y tradiciones de nuestra tierra" },
+  { name: "Alzando Voces", href: "/alzando-voces", icon: "📢", description: "Opinión y análisis ciudadano" },
+  { name: "La Cancha", href: "/la-cancha", icon: "⚽", description: "Deportes y actividades físicas" },
+  { name: "Saber CTG", href: "/saber-ctg", icon: "📚", description: "Educación y conocimiento local" },
+];
+---
+
+<Layout title="Así Va Cartagena - Tu Portal de Noticias">
+  <div class="min-h-screen bg-gray-50">
+    
+    <!-- Hero Section con imagen de fondo -->
+    <section class="relative h-screen flex items-center justify-center overflow-hidden">
+      <!-- Background Image con parallax -->
+      <div class="absolute inset-0 z-0">
+        <img 
+          src="/images/WhatsApp Image 2025-11-26 at 7.49.51 PM (2).jpeg" 
+          alt="Cartagena" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-linear-to-b from-black/60 via-black/40 to-black/70"></div>
+      </div>
+      
+      <!-- Hero Content -->
+      <div class="relative z-10 text-center px-4 max-w-5xl mx-auto animate-fade-in">
+        <img 
+          src="/images/Logo.jpeg" 
+          alt="Así Va Cartagena" 
+          class="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-6 shadow-2xl border-4 border-white/20 animate-float"
+        />
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 animate-slide-up">
+          Así Va <span class="text-amber-400">Cartagena</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-200 mb-8 animate-slide-up-delay">
+          El pulso de la ciudad heroica en tus manos
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up-delay-2">
+          <a 
+            href="#noticias" 
+            class="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            Ver Noticias
+          </a>
+          <a 
+            href="/contacto" 
+            class="px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-bold rounded-full border-2 border-white/30 transition-all duration-300 transform hover:scale-105"
+          >
+            Comparte Tu Historia
+          </a>
+        </div>
+      </div>
+
+      <!-- Scroll indicator -->
+      <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <svg class="w-8 h-8 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Estadísticas animadas -->
+    <section class="py-16 bg-linear-to-r from-amber-500 to-amber-600 text-white">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div class="scroll-animate" data-animation="fade-up">
+            <div class="text-4xl md:text-5xl font-bold mb-2 counter" data-target="1000">0</div>
+            <p class="text-amber-100">Noticias Publicadas</p>
+          </div>
+          <div class="scroll-animate" data-animation="fade-up" style="--delay: 0.1s">
+            <div class="text-4xl md:text-5xl font-bold mb-2 counter" data-target="50">0</div>
+            <p class="text-amber-100">Barrios Cubiertos</p>
+          </div>
+          <div class="scroll-animate" data-animation="fade-up" style="--delay: 0.2s">
+            <div class="text-4xl md:text-5xl font-bold mb-2 counter" data-target="10000">0</div>
+            <p class="text-amber-100">Lectores Mensuales</p>
+          </div>
+          <div class="scroll-animate" data-animation="fade-up" style="--delay: 0.3s">
+            <div class="text-4xl md:text-5xl font-bold mb-2 counter" data-target="365">0</div>
+            <p class="text-amber-100">Días Informando</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categorías -->
+    <section class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-16 scroll-animate" data-animation="fade-up">
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Explora Nuestras <span class="text-amber-500">Secciones</span>
+          </h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Descubre todo lo que Cartagena tiene para contarte
+          </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categories.map((cat, index) => (
+            <a 
+              href={cat.href}
+              class="group scroll-animate p-6 bg-gray-50 rounded-2xl hover:bg-amber-50 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-xl"
+              data-animation="fade-up"
+              style={`--delay: ${index * 0.1}s`}
+            >
+              <span class="text-4xl mb-4 block">{cat.icon}</span>
+              <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-amber-600 transition-colors">
+                {cat.name}
+              </h3>
+              <p class="text-gray-600">{cat.description}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Galería de Cartagena con efecto parallax -->
+    <section class="py-20 bg-gray-900 overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-16 scroll-animate" data-animation="fade-up">
+          <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+            Nuestra <span class="text-amber-400">Cartagena</span>
+          </h2>
+          <p class="text-gray-400 max-w-2xl mx-auto">
+            La ciudad heroica en imágenes
+          </p>
+        </div>
+        
+        <!-- Marquee de imágenes -->
+        <div class="relative">
+          <div class="flex gap-4 animate-marquee">
+            {[...galleryImages, ...galleryImages].map((img, i) => (
+              <div class="shrink-0 w-64 h-48 rounded-xl overflow-hidden">
+                <img 
+                  src={img} 
+                  alt={`Cartagena ${i + 1}`}
+                  class="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <!-- Segunda fila con dirección opuesta -->
+        <div class="relative mt-4">
+          <div class="flex gap-4 animate-marquee-reverse">
+            {[...cartagenaImages, ...cartagenaImages].map((img, i) => (
+              <div class="shrink-0 w-64 h-48 rounded-xl overflow-hidden">
+                <img 
+                  src={img} 
+                  alt={`Cartagena ${i + 1}`}
+                  class="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Últimas Noticias -->
+    <section id="noticias" class="py-20 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-16 scroll-animate" data-animation="fade-up">
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Últimas <span class="text-amber-500">Noticias</span>
+          </h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Mantente informado con lo más reciente de la ciudad
+          </p>
+        </div>
+
+        {noticias.length === 0 ? (
+          <div class="text-center py-12 scroll-animate" data-animation="fade-up">
+            <div class="w-24 h-24 mx-auto mb-6 bg-amber-100 rounded-full flex items-center justify-center">
+              <svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+              </svg>
+            </div>
+            <p class="text-gray-500 text-xl">Pronto tendremos noticias para ti</p>
+            <p class="text-gray-400 mt-2">¡Vuelve pronto!</p>
+          </div>
+        ) : (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {noticias.map((noticia, index) => (
+              <article 
+                class="scroll-animate bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group"
+                data-animation="fade-up"
+                style={`--delay: ${index * 0.1}s`}
+              >
+                <div class="relative overflow-hidden">
+                  {noticia.image_url ? (
+                    <img 
+                      src={noticia.image_url} 
+                      alt={noticia.title}
+                      class="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div class="w-full h-52 bg-linear-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                      <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  {noticia.categories && Array.isArray(noticia.categories) && noticia.categories.length > 0 && (
+                    <span class="absolute top-4 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {noticia.categories[0].name}
+                    </span>
+                  )}
+                </div>
+                <div class="p-6">
+                  <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors line-clamp-2">
+                    <a href={`/user/noticia/${noticia.slug}`}>
+                      {noticia.title}
+                    </a>
+                  </h3>
+                  <p class="text-gray-600 mb-4 line-clamp-3">
+                    {noticia.content.substring(0, 120)}...
+                  </p>
+                  <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <time class="text-sm text-gray-500 flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      {new Date(noticia.created_at).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </time>
+                    <a 
+                      href={`/user/noticia/${noticia.slug}`}
+                      class="text-amber-600 hover:text-amber-700 font-semibold text-sm flex items-center gap-1 group/link"
+                    >
+                      Leer más 
+                      <svg class="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="relative py-24 overflow-hidden">
+      <div class="absolute inset-0">
+        <img 
+          src="/images/WhatsApp Image 2025-11-26 at 7.49.53 PM (2).jpeg" 
+          alt="Cartagena" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-linear-to-r from-amber-600/90 to-amber-500/80"></div>
+      </div>
+      
+      <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
+        <div class="scroll-animate" data-animation="fade-up">
+          <h2 class="text-3xl md:text-5xl font-bold text-white mb-6">
+            ¿Tienes una historia que contar?
+          </h2>
+          <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+            Tu voz es importante. Comparte denuncias, historias o sugerencias con nosotros y ayúdanos a construir una mejor Cartagena.
+          </p>
+          <a 
+            href="/contacto" 
+            class="inline-flex items-center gap-2 px-10 py-5 bg-white text-amber-600 font-bold rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            Contáctanos Ahora
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</Layout>
+
+<style>
+  /* Animaciones de entrada */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0; 
+      transform: translateY(30px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes marquee-reverse {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+  }
+
+  .animate-slide-up-delay {
+    animation: slideUp 0.8s ease-out 0.2s both;
+  }
+
+  .animate-slide-up-delay-2 {
+    animation: slideUp 0.8s ease-out 0.4s both;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  .animate-marquee-reverse {
+    animation: marquee-reverse 35s linear infinite;
+  }
+
+  /* Scroll animations */
+  .scroll-animate {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    transition-delay: var(--delay, 0s);
+  }
+
+  .scroll-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Hover effects */
+  .group:hover .group-hover\:scale-110 {
+    transform: scale(1.1);
+  }
+</style>
+
+<script>
+  // Scroll animation observer
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.1
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, observerOptions);
+
+  document.querySelectorAll('.scroll-animate').forEach(el => {
+    observer.observe(el);
+  });
+
+  // Counter animation
+  const counters = document.querySelectorAll('.counter');
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const counter = entry.target as HTMLElement;
+        const target = parseInt(counter.dataset.target || '0');
+        const duration = 2000;
+        const step = target / (duration / 16);
+        let current = 0;
+
+        const updateCounter = () => {
+          current += step;
+          if (current < target) {
+            counter.textContent = Math.floor(current).toLocaleString() + '+';
+            requestAnimationFrame(updateCounter);
+          } else {
+            counter.textContent = target.toLocaleString() + '+';
+          }
+        };
+
+        updateCounter();
+        counterObserver.unobserve(counter);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  counters.forEach(counter => counterObserver.observe(counter));
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(this: HTMLAnchorElement, e: Event) {
+      e.preventDefault();
+      const href = this.getAttribute('href');
+      if (href) {
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }
+    });
+  });
+</script>

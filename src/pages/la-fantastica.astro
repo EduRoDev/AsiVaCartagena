@@ -1,0 +1,33 @@
+---
+// filepath: c:\Users\Administrator\Desktop\Blog de noticias\AsiVaCartagena\src\pages\la-fantastica.astro
+export const prerender = false;
+import Layout from '../components/layout.astro';
+import NewsGrid from '../components/NewsGrid.astro';
+import { supabase } from '../lib/supabase';
+
+const CATEGORY_NAME = "La Fantástica";
+
+const { data: news } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    content,
+    image_url,
+    created_at,
+    category_id,
+    categories!inner (
+      id,
+      name
+    )
+  `)
+  .eq('categories.name', CATEGORY_NAME)
+  .order('created_at', { ascending: false });
+
+const noticias = news ?? [];
+---
+
+<Layout title={`${CATEGORY_NAME} - Así Va Cartagena`}>
+  <NewsGrid noticias={noticias} categoryName={CATEGORY_NAME} />
+</Layout>

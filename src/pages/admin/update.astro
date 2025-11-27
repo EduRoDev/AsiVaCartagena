@@ -1,0 +1,349 @@
+---
+export const prerender = false;
+import { supabase } from "../../lib/supabase";
+import Layout from '../../components/layout.astro';
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect("/signin");
+}
+
+const id = Astro.url.searchParams.get('id');
+
+if (!id) {
+  return Astro.redirect("/dashboard");
+}
+
+// Obtener la noticia por ID
+const { data: noticia, error } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    content,
+    image_url,
+    category_id
+  `)
+  .eq('id', id)
+  .single();
+
+if (error || !noticia) {
+  return Astro.redirect("/dashboard");
+}
+
+// Obtener categorías
+const { data: categoriesData } = await supabase
+  .from("categories")
+  .select("id, name")
+  .order("name", { ascending: true });
+
+const categories = categoriesData ?? [];
+---
+
+<Layout title={`Editar: ${noticia.title}`} hideNavbar={true}>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+      <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/dashboard" class="inline-flex items-center gap-2 text-gray-600 hover:text-amber-600 transition-colors group">
+          <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al Dashboard
+        </a>
+        <div class="flex items-center gap-2">
+          <img src="/images/Logo.jpeg" alt="Logo" class="w-8 h-8 rounded-full" />
+          <span class="font-semibold text-gray-900">Así Va Cartagena</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Editar Noticia</h1>
+        <p class="text-gray-500 mt-1">Modifica los campos que desees actualizar</p>
+      </div>
+
+      <form id="updateForm" class="space-y-6">
+        <input type="hidden" id="newsId" value={noticia.id} />
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6 animate-slide-up">
+          <!-- Título -->
+          <div>
+            <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+              Título de la noticia
+            </label>
+            <input
+              id="title"
+              name="title"
+              value={noticia.title}
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+            />
+          </div>
+
+          <!-- Slug -->
+          <div>
+            <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">
+              Slug (URL amigable)
+            </label>
+            <div class="flex items-center">
+              <span class="px-4 py-3 bg-gray-100 border border-r-0 border-gray-200 rounded-l-xl text-gray-500 text-sm">
+                /noticia/
+              </span>
+              <input
+                id="slug"
+                name="slug"
+                value={noticia.slug}
+                required
+                class="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Categoría -->
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+              Categoría
+            </label>
+            <select
+              id="category"
+              name="category"
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none appearance-none bg-white"
+            >
+              {categories.map((cat) => (
+                <option value={cat.id} selected={cat.id === noticia.category_id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <!-- Imagen actual -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Imagen de portada
+            </label>
+            {noticia.image_url && (
+              <div class="mb-4 relative group">
+                <img 
+                  src={noticia.image_url} 
+                  alt="Imagen actual" 
+                  class="w-full h-48 object-cover rounded-xl"
+                />
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                  <span class="text-white text-sm font-medium">Imagen actual</span>
+                </div>
+              </div>
+            )}
+            <div class="relative">
+              <input
+                id="image"
+                type="file"
+                accept="image/*"
+                class="hidden"
+              />
+              <label 
+                for="image" 
+                class="flex items-center justify-center w-full py-3 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-amber-500 hover:bg-amber-50/50 transition-all"
+              >
+                <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="text-sm text-gray-600">Cambiar imagen (opcional)</span>
+              </label>
+              <p id="selected-file" class="text-xs text-amber-600 mt-2 hidden"></p>
+            </div>
+          </div>
+
+          <!-- Contenido -->
+          <div>
+            <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
+              Contenido de la noticia
+            </label>
+            <textarea
+              id="content"
+              rows="12"
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none resize-none"
+            >{noticia.content}</textarea>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100 p-4 animate-slide-up" style="animation-delay: 0.1s">
+          <div id="status" class="text-sm text-gray-600 flex items-center gap-2">
+            <span id="status-text"></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <a 
+              href="/dashboard"
+              class="px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-medium transition-all"
+            >
+              Cancelar
+            </a>
+            <button
+              id="submitBtn"
+              type="submit"
+              class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg shadow-amber-500/25 inline-flex items-center gap-2"
+            >
+              <svg id="submit-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <svg id="submit-spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span id="submit-text">Guardar Cambios</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.5s ease-out both;
+    }
+  </style>
+
+  <script define:vars={{ currentImageUrl: noticia.image_url }}>
+    const form = document.getElementById("updateForm");
+    const statusText = document.getElementById("status-text");
+    const submitBtn = document.getElementById("submitBtn");
+    const submitIcon = document.getElementById("submit-icon");
+    const submitSpinner = document.getElementById("submit-spinner");
+    const submitTextEl = document.getElementById("submit-text");
+    const imageInput = document.getElementById("image");
+    const selectedFile = document.getElementById("selected-file");
+
+    // Show selected file name
+    imageInput?.addEventListener("change", () => {
+      const file = imageInput.files?.[0];
+      if (file && selectedFile) {
+        selectedFile.textContent = `📎 ${file.name}`;
+        selectedFile.classList.remove("hidden");
+      }
+    });
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      submitBtn.disabled = true;
+      submitIcon.classList.add("hidden");
+      submitSpinner.classList.remove("hidden");
+      submitTextEl.textContent = "Guardando...";
+
+      const newsId = document.getElementById("newsId").value;
+      const imageFile = imageInput?.files?.[0];
+
+      let imageUrl = currentImageUrl;
+
+      try {
+        if (imageFile) {
+          statusText.textContent = "📤 Subiendo imagen...";
+          statusText.className = "text-blue-600";
+
+          const imgForm = new FormData();
+          imgForm.append("image", imageFile);
+
+          const uploadRes = await fetch("/api/cloudinary/upload-image", {
+            method: "POST",
+            body: imgForm
+          });
+
+          const uploadData = await uploadRes.json();
+
+          if (!uploadData.url) {
+            throw new Error("Error subiendo imagen");
+          }
+
+          imageUrl = uploadData.url;
+        }
+
+        statusText.textContent = "💾 Actualizando noticia...";
+
+        const title = document.getElementById("title").value;
+        const slug = document.getElementById("slug").value;
+        const category_id = document.getElementById("category").value;
+        const content = document.getElementById("content").value;
+
+        const res = await fetch("/api/news/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: newsId,
+            title,
+            slug,
+            content,
+            category_id,
+            image_url: imageUrl,
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        statusText.textContent = "✅ ¡Actualizado correctamente!";
+        statusText.className = "text-green-600";
+        submitTextEl.textContent = "¡Guardado!";
+
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
+
+      } catch (error) {
+        statusText.textContent = `❌ ${error.message || 'Error desconocido'}`;
+        statusText.className = "text-red-600";
+        submitBtn.disabled = false;
+        submitIcon.classList.remove("hidden");
+        submitSpinner.classList.add("hidden");
+        submitTextEl.textContent = "Guardar Cambios";
+      }
+    });
+
+    // Auto-generate slug from title
+    const titleInput = document.getElementById("title");
+    const slugInput = document.getElementById("slug");
+
+    titleInput?.addEventListener("input", () => {
+      const title = titleInput.value;
+      const slug = title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+      slugInput.value = slug;
+    });
+  </script>
+</Layout>

@@ -1,0 +1,219 @@
+---
+export const prerender = false;
+import { supabase } from "../../lib/supabase";
+import Layout from '../../components/layout.astro';
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect("/signin");
+}
+
+const id = Astro.url.searchParams.get('id');
+
+if (!id) {
+  return Astro.redirect("/dashboard");
+}
+
+// Obtener la noticia por ID
+const { data: noticia, error } = await supabase
+  .from('news')
+  .select(`
+    id,
+    title,
+    slug,
+    image_url,
+    created_at,
+    categories (
+      id,
+      name
+    )
+  `)
+  .eq('id', id)
+  .single();
+
+if (error || !noticia) {
+  return Astro.redirect("/dashboard");
+}
+
+const category = Array.isArray(noticia.categories) 
+  ? noticia.categories[0] 
+  : noticia.categories;
+---
+
+<Layout title={`Eliminar: ${noticia.title}`} hideNavbar={true}>
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-lg animate-fade-in">
+      <!-- Card -->
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <!-- Warning Header -->
+        <div class="bg-red-50 p-6">
+          <div class="flex items-center justify-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center animate-pulse-slow">
+              <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+          </div>
+          <h1 class="text-xl font-bold text-red-800 text-center mt-4">¿Eliminar esta noticia?</h1>
+          <p class="text-sm text-red-600 text-center mt-1">Esta acción no se puede deshacer</p>
+        </div>
+
+        <!-- News Preview -->
+        <div class="p-6">
+          <div class="flex gap-4 items-start">
+            {noticia.image_url ? (
+              <img 
+                src={noticia.image_url} 
+                alt={noticia.title}
+                class="w-24 h-20 object-cover rounded-xl shrink-0"
+              />
+            ) : (
+              <div class="w-24 h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            <div class="flex-1 min-w-0">
+              <h2 class="font-semibold text-gray-900 line-clamp-2">{noticia.title}</h2>
+              <div class="flex items-center gap-2 mt-2 flex-wrap">
+                {category && (
+                  <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                    {category.name}
+                  </span>
+                )}
+                <span class="text-xs text-gray-500">
+                  {new Date(noticia.created_at).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusContainer" class="hidden px-6 py-3 border-t border-gray-100">
+          <p id="status" class="text-sm text-center flex items-center justify-center gap-2"></p>
+        </div>
+
+        <!-- Actions -->
+        <div class="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 border-t border-gray-100">
+          <a
+            href="/dashboard"
+            class="w-full sm:w-auto px-6 py-3 text-center text-gray-700 bg-white border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-all"
+          >
+            Cancelar
+          </a>
+          <button
+            id="deleteBtn"
+            data-id={noticia.id}
+            class="w-full sm:w-auto px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg shadow-red-500/25 inline-flex items-center justify-center gap-2"
+          >
+            <svg id="delete-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <svg id="delete-spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="delete-text">Sí, eliminar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Back link -->
+      <div class="text-center mt-6">
+        <a href="/dashboard" class="inline-flex items-center gap-2 text-gray-500 hover:text-amber-600 transition-colors text-sm group">
+          <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes pulseSlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .animate-pulse-slow {
+      animation: pulseSlow 2s ease-in-out infinite;
+    }
+  </style>
+
+  <script>
+    const deleteBtn = document.getElementById("deleteBtn") as HTMLButtonElement | null;
+    const statusContainer = document.getElementById("statusContainer");
+    const status = document.getElementById("status");
+    const deleteIcon = document.getElementById("delete-icon");
+    const deleteSpinner = document.getElementById("delete-spinner");
+    const deleteText = document.getElementById("delete-text");
+
+    deleteBtn?.addEventListener("click", async () => {
+      if (!deleteBtn) return;
+      const newsId = deleteBtn.getAttribute("data-id");
+      
+      deleteBtn.disabled = true;
+      deleteIcon?.classList.add("hidden");
+      deleteSpinner?.classList.remove("hidden");
+      if (deleteText) deleteText.textContent = "Eliminando...";
+      
+      statusContainer?.classList.remove("hidden");
+      if (status) {
+        status.innerHTML = '⏳ Eliminando noticia...';
+        status.className = "text-sm text-center flex items-center justify-center gap-2 text-amber-600";
+      }
+
+      try {
+        const res = await fetch("/api/news/delete", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: newsId })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (status) {
+          status.innerHTML = '✅ ¡Noticia eliminada correctamente!';
+          status.className = "text-sm text-center flex items-center justify-center gap-2 text-green-600";
+        }
+        if (deleteText) deleteText.textContent = "¡Eliminado!";
+        
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
+
+      } catch (error) {
+        if (status) {
+          status.innerHTML = '❌ Error al eliminar la noticia';
+          status.className = "text-sm text-center flex items-center justify-center gap-2 text-red-600";
+        }
+        deleteBtn.disabled = false;
+        deleteIcon?.classList.remove("hidden");
+        deleteSpinner?.classList.add("hidden");
+        if (deleteText) deleteText.textContent = "Sí, eliminar";
+      }
+    });
+  </script>
+</Layout>
