@@ -2,9 +2,10 @@
 interface Props {
     title: string;
     hideNavbar?: boolean;
+    hideFooter?: boolean;
 }
 
-const { title, hideNavbar = false } = Astro.props;
+const { title, hideNavbar = false, hideFooter = false } = Astro.props;
 import '../styles/global.css';
 import Navbar from './navbar.astro';
 import Footer from './footer.astro'
@@ -23,6 +24,6 @@ import Footer from './footer.astro'
         <main>
             <slot />
         </main>
-        <Footer />
+        {!hideFooter && <Footer />}
     </body>
 </html>

@@ -14,6 +14,7 @@ export const PUT: APIRoute = async ({ request }) => {
       content: body.content,
       image_url: body.image_url,
       category_id: body.category_id,
+      created_at: body.created_at,
       updated_at: new Date()
     })
     .eq("id", body.id);
